@@ -2,7 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Image, Text, Pressable } from "react-native";
 import { useDispatch } from "react-redux";
-import { API_ARTIST, API_TRACK, API_IMAGE, PRIMARY_COLOR, SECONDARY_COLOR } from "../../util/constants";
+import { API_ARTIST, API_TRACK, API_IMAGE, PRIMARY_COLOR, SECONDARY_COLOR, DEFAULT_IMAGE } from "../../util/constants";
 import { getService } from "../../util/httpUtil";
 import { Loading } from "../loading";
 import { setOneGeo } from "../../redux/actions";
@@ -28,13 +28,17 @@ export const Geo = ({ track: { name, duration, image, artist, url } }) => {
     const callImage = async () => {
         setLoading(true)
         const api_request = `${API_IMAGE}${API_TRACK}${name}${API_ARTIST}${nameArtist}`
-        await getService(api_request).then(response => {
+        const response = await getService(api_request)
+        if(response){
             const { track } = response
             setInfo({...info, track})
             const result = cover(image, track, 1)
             setImg(result)
             setLoading(false)
-        })
+        } else {
+            setInfo({...info, image: DEFAULT_IMAGE})
+            setImg(DEFAULT_IMAGE)
+        }
     }
 
     const navigateTrack = () => {

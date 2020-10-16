@@ -5,11 +5,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { getService } from '../util/httpUtil';
 import { API_COUNTRY, API_PAGE, API_PATH } from '../util/constants';
 import { Loading } from '../components/loading';
+import { Database } from '../db';
 
 export const Main = () => {
   const actualPage = useSelector(state => state.actualPage)
   const dispatch = useDispatch()
-  const { container, basicText, centerLoading } = styles
+  const { container, centerLoading, noSync } = styles
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [geos, setGeos] = useState([])
@@ -17,23 +18,34 @@ export const Main = () => {
 
   useEffect(() => {
     callApi()
+    const db = new Database()
   }, [page])
-  
-  const callApi = async () =>{ 
+
+  const callApi = async () => {
     setLoading(true)
-    await getService(`${API_PATH}${API_COUNTRY}${country}${API_PAGE}${page}`).then(response => {
-      setGeos(response)
-      setLoading(false)
-    })
+    const db = new Database()
+    const response = await getService(`${API_PATH}${API_COUNTRY}${country}${API_PAGE}${page}`)
+    if(response){
+      const {tracks: {track}} = response
+      db.insertGeo(track)
+      setGeos([ ...geos, ...track])
+      setLoading(false) 
+    } else {
+      const tracks = await db.getGeo()
+      setGeos(tracks)
+      setLoading(false) 
+    }
   }
 
   return (
     <View style={container}>
       {
-        loading ? <>
-          <Loading style={centerLoading} size='large' text='cargando' fontSize={20} />
-        </> :
-        geos.length != 0 ? <GeoContainer geos={geos} /> : <Text style={basicText}>No hay registro de Geos actualmente</Text>
+        <>
+          {
+            geos === undefined ? <Text style={noSync}>No existen datos sincronizados hasta el momento</Text>
+            : geos.length != 0 && <GeoContainer geos={geos} page={page} setPage={setPage} loading={loading} />}
+          {loading && <Loading style={centerLoading} size='large' text='cargando' fontSize={20} />}
+        </>
       }
     </View>
   );
@@ -45,12 +57,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  basicText: {
-    fontSize: 20
-  },
   centerLoading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  noSync: {
+    fontSize: 25
   }
 })

@@ -1,4 +1,8 @@
 export const getService = async (host) => { 
-  const response = await fetch(host)
-  return response.json()
+  try {
+    const response = await fetch(host).then(response => response.json())
+    return response
+  } catch (error) {
+    return null
+  }
 }
